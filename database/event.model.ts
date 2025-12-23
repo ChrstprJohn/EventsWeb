@@ -113,19 +113,19 @@ const EventSchema = new Schema<IEvent>(
 EventSchema.pre("save", function (next) {
    const event = this as IEvent;
 
-function generateSlug(title: string): string {
-   const baseSlug = title
-     .toLowerCase()
-     .trim()
-     .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-     .replace(/\s+/g, "-") // Replace spaces with hyphens
-     .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-     .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
-   
-   // Append timestamp suffix to ensure uniqueness
-   const suffix = Date.now().toString(36);
-   return `${baseSlug}-${suffix}`;
-}
+   function generateSlug(title: string): string {
+      const baseSlug = title
+         .toLowerCase()
+         .trim()
+         .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
+         .replace(/\s+/g, "-") // Replace spaces with hyphens
+         .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+         .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+
+      // Append timestamp suffix to ensure uniqueness
+      const suffix = Date.now().toString(36);
+      return `${baseSlug}-${suffix}`;
+   }
 
    // Normalize date to ISO format if it's not already
    if (event.isModified("date")) {
