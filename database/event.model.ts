@@ -110,21 +110,12 @@ const EventSchema = new Schema<IEvent>(
 );
 
 // Pre-save hook for slug generation and data normalization
-EventSchema.pre("save", function (next) {
+EventSchema.pre("save", function () {
    const event = this as IEvent;
 
-   function generateSlug(title: string): string {
-      const baseSlug = title
-         .toLowerCase()
-         .trim()
-         .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-         .replace(/\s+/g, "-") // Replace spaces with hyphens
-         .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-         .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
-
-      // Append timestamp suffix to ensure uniqueness
-      const suffix = Date.now().toString(36);
-      return `${baseSlug}-${suffix}`;
+   // Generate slug if title is new or modified
+   if (!event.slug || event.isModified("title")) {
+      event.slug = generateSlug(event.title);
    }
 
    // Normalize date to ISO format if it's not already
@@ -140,13 +131,17 @@ EventSchema.pre("save", function (next) {
 
 // Helper function to generate URL-friendly slug
 function generateSlug(title: string): string {
-   return title
+   const baseSlug = title
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
       .replace(/\s+/g, "-") // Replace spaces with hyphens
       .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
       .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+
+   // Append timestamp suffix to ensure uniqueness
+   const suffix = Date.now().toString(36);
+   return `${baseSlug}-${suffix}`;
 }
 
 // Helper function to normalize date to ISO format
