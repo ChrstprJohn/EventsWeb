@@ -1,6 +1,5 @@
 import { Schema, model, models, Document } from "mongoose";
 
-// TypeScript interface for Event document
 export interface IEvent extends Document {
    title: string;
    slug: string;
@@ -105,40 +104,10 @@ const EventSchema = new Schema<IEvent>(
       },
    },
    {
-      timestamps: true, // Auto-generate createdAt and updatedAt
+      timestamps: true,
    }
 );
 
-// Pre-save hook for slug generation and data normalization
-EventSchema.pre("save", function (next) {
-   const event = this as IEvent;
-
-   function generateSlug(title: string): string {
-      const baseSlug = title
-         .toLowerCase()
-         .trim()
-         .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-         .replace(/\s+/g, "-") // Replace spaces with hyphens
-         .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
-         .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
-
-      // Append timestamp suffix to ensure uniqueness
-      const suffix = Date.now().toString(36);
-      return `${baseSlug}-${suffix}`;
-   }
-
-   // Normalize date to ISO format if it's not already
-   if (event.isModified("date")) {
-      event.date = normalizeDate(event.date);
-   }
-
-   // Normalize time format (HH:MM)
-   if (event.isModified("time")) {
-      event.time = normalizeTime(event.time);
-   }
-});
-
-// Helper function to generate URL-friendly slug
 function generateSlug(title: string): string {
    return title
       .toLowerCase()
@@ -149,18 +118,15 @@ function generateSlug(title: string): string {
       .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
 }
 
-// Helper function to normalize date to ISO format
 function normalizeDate(dateString: string): string {
    const date = new Date(dateString);
    if (isNaN(date.getTime())) {
       throw new Error("Invalid date format");
    }
-   return date.toISOString().split("T")[0]; // Return YYYY-MM-DD format
+   return date.toISOString().split("T")[0];
 }
 
-// Helper function to normalize time format
 function normalizeTime(timeString: string): string {
-   // Handle various time formats and convert to HH:MM (24-hour format)
    const timeRegex = /^(\d{1,2}):(\d{2})(\s*(AM|PM))?$/i;
    const match = timeString.trim().match(timeRegex);
 
@@ -173,7 +139,6 @@ function normalizeTime(timeString: string): string {
    const period = match[4]?.toUpperCase();
 
    if (period) {
-      // Convert 12-hour to 24-hour format
       if (period === "PM" && hours !== 12) hours += 12;
       if (period === "AM" && hours === 12) hours = 0;
    }
@@ -190,10 +155,24 @@ function normalizeTime(timeString: string): string {
    return `${hours.toString().padStart(2, "0")}:${minutes}`;
 }
 
-// Create unique index on slug for better performance
-EventSchema.index({ slug: 1 }, { unique: true });
+EventSchema.pre("save", async function () {
+   const event = this as IEvent;
 
-// Create compound index for common queries
+   if (event.isModified("title") || event.isNew) {
+      event.slug = generateSlug(event.title);
+      event.markModified("slug");
+   }
+
+   if (event.isModified("date")) {
+      event.date = normalizeDate(event.date);
+   }
+
+   if (event.isModified("time")) {
+      event.time = normalizeTime(event.time);
+   }
+});
+
+EventSchema.index({ slug: 1 }, { unique: true });
 EventSchema.index({ date: 1, mode: 1 });
 
 const Event = models.Event || model<IEvent>("Event", EventSchema);
