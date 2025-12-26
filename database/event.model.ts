@@ -1,6 +1,5 @@
 import { Schema, model, models, Document } from "mongoose";
 
-// TypeScript interface for Event document
 export interface IEvent extends Document {
    title: string;
    slug: string;
@@ -105,7 +104,7 @@ const EventSchema = new Schema<IEvent>(
       },
    },
    {
-      timestamps: true, // Auto-generate createdAt and updatedAt
+      timestamps: true,
    }
 );
 
@@ -144,18 +143,15 @@ function generateSlug(title: string): string {
    return `${baseSlug}-${suffix}`;
 }
 
-// Helper function to normalize date to ISO format
 function normalizeDate(dateString: string): string {
    const date = new Date(dateString);
    if (isNaN(date.getTime())) {
       throw new Error("Invalid date format");
    }
-   return date.toISOString().split("T")[0]; // Return YYYY-MM-DD format
+   return date.toISOString().split("T")[0];
 }
 
-// Helper function to normalize time format
 function normalizeTime(timeString: string): string {
-   // Handle various time formats and convert to HH:MM (24-hour format)
    const timeRegex = /^(\d{1,2}):(\d{2})(\s*(AM|PM))?$/i;
    const match = timeString.trim().match(timeRegex);
 
@@ -168,7 +164,6 @@ function normalizeTime(timeString: string): string {
    const period = match[4]?.toUpperCase();
 
    if (period) {
-      // Convert 12-hour to 24-hour format
       if (period === "PM" && hours !== 12) hours += 12;
       if (period === "AM" && hours === 12) hours = 0;
    }
@@ -185,10 +180,24 @@ function normalizeTime(timeString: string): string {
    return `${hours.toString().padStart(2, "0")}:${minutes}`;
 }
 
-// Create unique index on slug for better performance
-EventSchema.index({ slug: 1 }, { unique: true });
+EventSchema.pre("save", async function () {
+   const event = this as IEvent;
 
-// Create compound index for common queries
+   if (event.isModified("title") || event.isNew) {
+      event.slug = generateSlug(event.title);
+      event.markModified("slug");
+   }
+
+   if (event.isModified("date")) {
+      event.date = normalizeDate(event.date);
+   }
+
+   if (event.isModified("time")) {
+      event.time = normalizeTime(event.time);
+   }
+});
+
+EventSchema.index({ slug: 1 }, { unique: true });
 EventSchema.index({ date: 1, mode: 1 });
 
 const Event = models.Event || model<IEvent>("Event", EventSchema);
