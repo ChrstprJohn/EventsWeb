@@ -9,7 +9,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 const Page = async () => {
     // throw new Error("Not Implemented");
     'use cache';
-    //  cacheLife('hours'); // delay created data for hours
+    cacheLife('hours'); // delay created data for hours
 
     const response = await fetch(`${BASE_URL}/api/events`);
     const { events } = await response.json();
