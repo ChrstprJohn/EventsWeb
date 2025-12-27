@@ -1,13 +1,11 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { IEvent } from '@/database';
-import { getSimilarEventBySlug } from '@/lib/actions/event.actions';
+import { getSimilarEventBySlug, getEventBySlug } from '@/lib/actions/event.actions';
 import Image from 'next/image';
 import BookEvent from '@/Components/BookEvent';
 import EventCard from '@/Components/EventCard';
 import { cacheLife } from 'next/cache';
-
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 const EventDetailItem = ({ icon, alt, label }: { icon: string; alt: string; label: string }) => (
     <div className='flex-row-gap-2 items-center'>
@@ -50,27 +48,10 @@ const EventDetails = async ({ params }: { params: Promise<string> }) => {
     cacheLife('hours');
     const slug = await params;
 
-    let event;
-    try {
-        const request = await fetch(`${BASE_URL}/api/events/${slug}`, {
-            next: { revalidate: 60 },
-        });
+    // Direct database access - no fetch needed
+    const event = await getEventBySlug(slug);
 
-        if (!request.ok) {
-            if (request.status === 404) {
-                return notFound();
-            }
-            throw new Error(`Failed to fetch event: ${request.statusText}`);
-        }
-
-        const response = await request.json();
-        event = response.event;
-
-        if (!event) {
-            return notFound();
-        }
-    } catch (error) {
-        console.error('Error fetching event:', error);
+    if (!event) {
         return notFound();
     }
 

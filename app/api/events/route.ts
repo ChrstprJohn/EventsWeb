@@ -2,6 +2,7 @@ import connectDB from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import Event from '@/database/event.model';
 import { v2 as cloudinary } from 'cloudinary';
+import { getEvents } from '@/lib/actions/event.actions';
 
 export async function POST(req: NextRequest) {
     try {
@@ -81,10 +82,8 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
     try {
-        await connectDB();
-
-        // Fetch data from MongoDB
-        const events = await Event.find().sort({ createdAt: -1 });
+        // Use shared server action instead of duplicating DB logic
+        const { events } = await getEvents();
 
         return NextResponse.json(
             {
