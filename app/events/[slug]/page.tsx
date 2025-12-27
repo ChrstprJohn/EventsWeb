@@ -4,6 +4,7 @@ import { IEvent } from '@/database';
 import BookEvent from '@/Components/BookEvent';
 import { getSimilarEventBySlug } from '@/lib/actions/event.actions';
 import EventCard from '@/Components/EventCard';
+import { Suspense } from 'react';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
@@ -43,7 +44,8 @@ const EventTags = ({ tags }: { tags: string[] }) => (
     </div>
 );
 
-const EventDetailsPage = async ({ params }: { params: Promise<{ slug: string }> }) => {
+// Separate component for event content
+async function EventContent({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
 
     let event;
@@ -87,7 +89,6 @@ const EventDetailsPage = async ({ params }: { params: Promise<{ slug: string }> 
     if (!description) return notFound();
 
     const bookings = 10;
-
     const similarEvents: IEvent[] = await getSimilarEventBySlug(slug);
 
     return (
@@ -98,7 +99,6 @@ const EventDetailsPage = async ({ params }: { params: Promise<{ slug: string }> 
             </div>
 
             <div className='details'>
-                {/*    Left Side - Event Content */}
                 <div className='content'>
                     <Image
                         src={image}
@@ -159,7 +159,10 @@ const EventDetailsPage = async ({ params }: { params: Promise<{ slug: string }> 
                             <p className='text-sm'>Be the first to book your spot!</p>
                         )}
 
-                        <BookEvent />
+                        <BookEvent
+                            eventId={event._id}
+                            slug={event.slug}
+                        />
                     </div>
                 </aside>
             </div>
@@ -178,5 +181,14 @@ const EventDetailsPage = async ({ params }: { params: Promise<{ slug: string }> 
             </div>
         </section>
     );
+}
+
+const EventDetailsPage = ({ params }: { params: Promise<{ slug: string }> }) => {
+    return (
+        <Suspense fallback={<div>Loading event details...</div>}>
+            <EventContent params={params} />
+        </Suspense>
+    );
 };
+
 export default EventDetailsPage;
